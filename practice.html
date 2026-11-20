@@ -1,0 +1,323 @@
+<!DOCTYPE html> 
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>The Guest Check – Tax, Tip &amp; Split Calculator</title>
+<style>
+  :root {
+    --cloth-a: #2f6b57;
+    --cloth-b: #3b7d67;
+    --paper: #fbf7e8;
+    --ink: #1d2a5b;
+    --print: #3a352c;
+    --stamp: #b3261e;
+    --rule: #cfc7a8;
+  }
+  * { box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; }
+  body {
+    margin: 0;
+    min-height: 100vh;
+    padding: 32px 16px 48px;
+    font-family: "Courier New", Courier, monospace;
+    color: var(--print);
+    background-color: var(--cloth-a);
+    background-image:
+      linear-gradient(90deg, rgba(255,255,255,.14) 50%, transparent 50%),
+      linear-gradient(rgba(255,255,255,.14) 50%, transparent 50%);
+    background-size: 48px 48px;
+  }
+  .sign {
+    max-width: 440px;
+    margin: 0 auto 22px;
+    text-align: center;
+    color: #fbf7e8;
+    font-family: Georgia, "Times New Roman", serif;
+  }
+  .sign h1 {
+    margin: 0;
+    font-size: 2.1rem;
+    font-style: italic;
+    font-weight: bold;
+    letter-spacing: .5px;
+    text-shadow: 2px 2px 0 rgba(0,0,0,.35);
+  }
+  .sign p { margin: 4px 0 0; font-size: .95rem; }
+
+  .check {
+    position: relative;
+    max-width: 440px;
+    margin: 0 auto;
+    padding: 26px 24px 30px;
+    background: var(--paper);
+    box-shadow: 0 6px 14px rgba(0,0,0,.4);
+    transform: rotate(-.6deg);
+  }
+  .check::before, .check::after {
+    content: "";
+    position: absolute;
+    left: 0; right: 0;
+    height: 10px;
+    background:
+      radial-gradient(circle at 7px 0, transparent 6px, var(--paper) 6.5px) 0 0 / 14px 10px repeat-x;
+  }
+  .check::before { top: -9px; transform: scaleY(-1); }
+  .check::after { bottom: -9px; }
+
+  .head { text-align: center; border-bottom: 2px dashed var(--rule); padding-bottom: 12px; }
+  .head b { font-size: 1.15rem; letter-spacing: 2px; }
+  .head span { display: block; font-size: .8rem; margin-top: 2px; }
+  .no { position: absolute; top: 14px; right: 18px; color: var(--stamp); font-weight: bold; font-size: 1.1rem; }
+
+  label, .lbl { display: block; margin: 16px 0 5px; font-size: .85rem; font-weight: bold; }
+  input[type=number], select {
+    width: 100%;
+    font: inherit;
+    font-size: 1.1rem;
+    color: var(--ink);
+    background: transparent;
+    border: 0;
+    border-bottom: 2px solid var(--print);
+    padding: 6px 2px;
+    border-radius: 0;
+    appearance: none;
+    -webkit-appearance: none;
+  }
+  select {
+    background-image: linear-gradient(45deg, transparent 50%, var(--print) 50%),
+                      linear-gradient(135deg, var(--print) 50%, transparent 50%);
+    background-position: calc(100% - 14px) 55%, calc(100% - 8px) 55%;
+    background-size: 6px 6px;
+    background-repeat: no-repeat;
+  }
+  input:focus-visible, select:focus-visible, button:focus-visible {
+    outline: 3px solid var(--stamp);
+    outline-offset: 2px;
+  }
+  .hint { font-size: .78rem; margin-top: 4px; }
+
+  .tips { display: flex; flex-wrap: wrap; gap: 8px; }
+  .tips button, .step button {
+    font: inherit;
+    font-weight: bold;
+    color: var(--print);
+    background: var(--paper);
+    border: 2px solid var(--print);
+    padding: 7px 11px;
+    cursor: pointer;
+    min-width: 46px;
+  }
+  .tips button[aria-pressed=true] {
+    background: var(--ink);
+    color: var(--paper);
+    border-color: var(--ink);
+  }
+  .tips input { width: 90px; font-size: 1rem; }
+
+  .row { display: flex; gap: 14px; align-items: flex-end; }
+  .row > div { flex: 1; }
+  .step { display: flex; align-items: center; gap: 12px; }
+  .step output { min-width: 28px; text-align: center; font-size: 1.3rem; color: var(--ink); font-weight: bold; }
+
+  .check-opt { display: flex; gap: 8px; align-items: center; margin: 16px 0 0; font-weight: normal; }
+  .check-opt input { width: 18px; height: 18px; accent-color: var(--ink); }
+
+  .tally { margin-top: 22px; border-top: 2px dashed var(--rule); padding-top: 12px; }
+  .line { display: flex; align-items: baseline; gap: 6px; padding: 3px 0; }
+  .line i { flex: 1; border-bottom: 2px dotted var(--rule); transform: translateY(-3px); }
+  .line .v { color: var(--ink); font-weight: bold; }
+  .total { margin-top: 8px; padding-top: 8px; border-top: 2px solid var(--print); font-size: 1.15rem; }
+
+  .each {
+    margin-top: 18px;
+    padding: 12px 14px;
+    border: 3px double var(--stamp);
+    color: var(--stamp);
+    text-align: center;
+    transform: rotate(-1.2deg);
+  }
+  .each small { display: block; font-size: .8rem; }
+  .each strong { font-size: 2rem; display: block; line-height: 1.2; }
+  .foot { text-align: center; font-size: .78rem; margin-top: 18px; }
+  .err { color: var(--stamp); font-size: .8rem; min-height: 1.1em; margin-top: 4px; }
+
+  @media (prefers-reduced-motion: no-preference) {
+    .each.pop { animation: stamp .25s ease-out; }
+    @keyframes stamp { from { transform: rotate(-1.2deg) scale(1.15); } to { transform: rotate(-1.2deg) scale(1); } }
+  }
+  @media (max-width: 380px) { .row { flex-direction: column; align-items: stretch; } }
+</style>
+</head>
+<body>
+
+<header class="sign">
+  <h1>The Guest Check</h1>
+  <p>Tax, tip and who owes what.</p>
+</header>
+
+<main class="check">
+  <div class="no">No. <span id="no">0000</span></div>
+  <div class="head">
+    <b>THANK YOU</b>
+    <span id="date"></span>
+  </div>
+
+  <label for="price">Bill amount (before tax)</label>
+  <input id="price" type="number" inputmode="decimal" min="0" step="0.01" placeholder="0.00">
+  <div class="err" id="err" role="alert"></div>
+
+  <label for="region">Where are you eating?</label>
+  <select id="region"></select>
+  <div class="hint" id="rateHint"></div>
+
+  <div class="lbl" id="tipLbl">Tip</div>
+  <div class="tips" role="group" aria-labelledby="tipLbl" id="tips"></div>
+
+  <label class="check-opt"><input type="checkbox" id="pretax" checked> Figure the tip on the pre-tax amount</label>
+
+  <div class="lbl">People at the table</div>
+  <div class="step">
+    <button type="button" id="minus" aria-label="One fewer person">&minus;</button>
+    <output id="people" aria-live="polite">1</output>
+    <button type="button" id="plus" aria-label="One more person">+</button>
+  </div>
+
+  <div class="tally" aria-live="polite">
+    <div class="line"><span>Subtotal</span><i></i><span class="v" id="oSub">0.00</span></div>
+    <div class="line"><span id="taxName">Tax</span><i></i><span class="v" id="oTax">0.00</span></div>
+    <div class="line"><span id="tipName">Tip</span><i></i><span class="v" id="oTip">0.00</span></div>
+    <div class="line total"><span>TOTAL</span><i></i><span class="v" id="oTot">0.00</span></div>
+  </div>
+
+  <div class="each" id="each">
+    <small>Each person pays</small>
+    <strong id="oEach">0.00</strong>
+  </div>
+
+  <p class="foot">Tax rates are general sales tax rates and may differ for some items.<br>Please come again.</p>
+</main>
+
+<script>
+(function () {
+  // Rates are percentages. cur picks the currency for formatting.
+  var REGIONS = [
+    { n: "Alberta",                 r: 5,      t: "GST",       c: "CAD" },
+    { n: "British Columbia",        r: 12,     t: "GST + PST", c: "CAD" },
+    { n: "Manitoba",                r: 12,     t: "GST + RST", c: "CAD" },
+    { n: "New Brunswick",           r: 15,     t: "HST",       c: "CAD" },
+    { n: "Newfoundland & Labrador", r: 15,     t: "HST",       c: "CAD" },
+    { n: "Northwest Territories",   r: 5,      t: "GST",       c: "CAD" },
+    { n: "Nova Scotia",             r: 14,     t: "HST",       c: "CAD" },
+    { n: "Nunavut",                 r: 5,      t: "GST",       c: "CAD" },
+    { n: "Ontario",                 r: 13,     t: "HST",       c: "CAD" },
+    { n: "Prince Edward Island",    r: 15,     t: "HST",       c: "CAD" },
+    { n: "Quebec",                  r: 14.975, t: "GST + QST", c: "CAD" },
+    { n: "Saskatchewan",            r: 11,     t: "GST + PST", c: "CAD" },
+    { n: "Yukon",                   r: 5,      t: "GST",       c: "CAD" },
+    { n: "California (base rate)",  r: 7.25,   t: "Sales tax", c: "USD" },
+    { n: "New York (state rate)",   r: 4,      t: "Sales tax", c: "USD" },
+    { n: "Oregon",                  r: 0,      t: "Sales tax", c: "USD" },
+    { n: "Texas (state rate)",      r: 6.25,   t: "Sales tax", c: "USD" }
+  ];
+  var TIPS = [0, 10, 15, 18, 20];
+
+  var $ = function (id) { return document.getElementById(id); };
+  var price = $("price"), region = $("region"), pretax = $("pretax");
+  var state = { tip: 18, custom: false, people: 1 };
+
+  // Fill the region list
+  REGIONS.forEach(function (x, i) {
+    var o = document.createElement("option");
+    o.value = i; o.textContent = x.n;
+    region.appendChild(o);
+  });
+  region.value = 8; // Ontario
+
+  // Tip buttons
+  var tipBox = $("tips"), customInput;
+  TIPS.forEach(function (p) {
+    var b = document.createElement("button");
+    b.type = "button"; b.textContent = p + "%"; b.dataset.tip = p;
+    b.setAttribute("aria-pressed", p === state.tip);
+    b.addEventListener("click", function () {
+      state.tip = p; state.custom = false; customInput.value = "";
+      refreshTipButtons(); calc();
+    });
+    tipBox.appendChild(b);
+  });
+  customInput = document.createElement("input");
+  customInput.type = "number"; customInput.min = 0; customInput.max = 100; customInput.step = "0.5";
+  customInput.placeholder = "Other %"; customInput.setAttribute("aria-label", "Custom tip percent");
+  customInput.addEventListener("input", function () {
+    var v = parseFloat(customInput.value);
+    if (isNaN(v) || v < 0) { state.custom = false; if (customInput.value === "") state.tip = 0; }
+    else { state.tip = v; state.custom = true; }
+    refreshTipButtons(); calc();
+  });
+  tipBox.appendChild(customInput);
+
+  function refreshTipButtons() {
+    Array.prototype.forEach.call(tipBox.querySelectorAll("button"), function (b) {
+      b.setAttribute("aria-pressed", !state.custom && Number(b.dataset.tip) === state.tip);
+    });
+  }
+
+  function money(n, cur) {
+    return new Intl.NumberFormat("en-CA", { style: "currency", currency: cur }).format(n);
+  }
+  function round2(n) { return Math.round((n + Number.EPSILON) * 100) / 100; }
+
+  function calc() {
+    var reg = REGIONS[region.value];
+    var raw = price.value.trim();
+    var sub = parseFloat(raw);
+    var err = $("err");
+
+    $("rateHint").textContent = reg.t + " at " + reg.r + "%";
+    $("taxName").textContent = reg.t + " (" + reg.r + "%)";
+    $("tipName").textContent = "Tip (" + state.tip + "%)";
+
+    if (raw !== "" && (isNaN(sub) || sub < 0)) {
+      err.textContent = "Enter an amount of zero or more.";
+      sub = 0;
+    } else {
+      err.textContent = "";
+      if (isNaN(sub)) sub = 0;
+    }
+
+    var tax = round2(sub * reg.r / 100);
+    var tipBase = pretax.checked ? sub : sub + tax;
+    var tip = round2(tipBase * state.tip / 100);
+    var total = round2(sub + tax + tip);
+    var each = round2(total / state.people);
+
+    $("oSub").textContent = money(sub, reg.c);
+    $("oTax").textContent = money(tax, reg.c);
+    $("oTip").textContent = money(tip, reg.c);
+    $("oTot").textContent = money(total, reg.c);
+    $("oEach").textContent = money(each, reg.c);
+    $("people").textContent = state.people;
+    $("minus").disabled = state.people <= 1;
+
+    var e = $("each");
+    e.classList.remove("pop"); void e.offsetWidth; e.classList.add("pop");
+  }
+
+  $("plus").addEventListener("click", function () { if (state.people < 50) state.people++; calc(); });
+  $("minus").addEventListener("click", function () { if (state.people > 1) state.people--; calc(); });
+  price.addEventListener("input", calc);
+  region.addEventListener("change", calc);
+  pretax.addEventListener("change", calc);
+
+  // Check number and date, for looks
+  $("no").textContent = String(Math.floor(1000 + Math.random() * 9000));
+  $("date").textContent = new Date().toLocaleDateString("en-CA", {
+    weekday: "long", year: "numeric", month: "long", day: "numeric"
+  });
+
+  calc();
+})();
+</script>
+</body>
+</html>
